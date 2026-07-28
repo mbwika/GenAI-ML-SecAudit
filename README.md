@@ -41,6 +41,10 @@ usable today.
 - Compliance Mapping
 - Governance Reporting
 
+## Free/Paid Boundary
+
+The community edition keeps the advisory policy engine and /v1/pep API so operators can evaluate policy decisions and inspect evidence. Inline request-blocking PEP gateway middleware is not distributed here; it lives in the Professional/Enterprise package aiaf_pro.enforcement because runtime enforcement is a paid control-plane capability.
+
 ## Foundation Artifacts
 
 - [Technical Architecture](architecture.md)
