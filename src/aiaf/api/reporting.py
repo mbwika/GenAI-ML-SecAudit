@@ -14,7 +14,7 @@ router = APIRouter(prefix="/v1/reporting", tags=["reporting"])
 
 # Allowlist of valid report format values — reject anything else before it
 # reaches the engine to prevent format-parameter injection.
-_ALLOWED_REPORT_FORMATS = frozenset({"json", "markdown", "html", "oscal"})
+_ALLOWED_REPORT_FORMATS = frozenset({"json", "markdown", "html", "oscal", "sarif"})
 
 # Scope ID fields (artifact_id, model_id, registered_by) must not contain
 # HTML-special characters.  Blocking them here prevents taint from reaching
@@ -76,6 +76,8 @@ def assurance_report(
         return _html_report_response(engine, scope)
     if fmt == "oscal":
         return engine.assurance_report_oscal(**_escape_scope(scope))
+    if fmt == "sarif":
+        return engine.assurance_report_sarif(**scope)
     return engine.assurance_report(**scope)
 
 

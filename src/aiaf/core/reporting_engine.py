@@ -6,7 +6,7 @@ from ..reporting.assurance_report import (
     render_assurance_report_html,
     render_assurance_report_markdown,
 )
-from ..reporting.exporters import export_oscal_ssp
+from ..reporting.exporters import export_oscal_ssp, export_sarif
 from ..reporting.report import Reporter
 
 
@@ -145,6 +145,20 @@ class ReportingEngine:
             report=report,
         )
 
+    def assurance_report_sarif(
+        self,
+        artifact_id: str | None = None,
+        model_id: str | None = None,
+        registered_by: str | None = None,
+    ) -> dict[str, Any]:
+        report = self.assurance_report(
+            artifact_id=artifact_id,
+            model_id=model_id,
+            registered_by=registered_by,
+        )
+        findings = _sarif_findings(report.get("raw_finding_items") or [])
+        return export_sarif(findings, tool_version=str(report.get("schema_version") or "0.2.0"))
+
     def alerts(
         self,
         artifact_id: str | None = None,
@@ -196,6 +210,39 @@ class ReportingEngine:
                 if item.get("artifact_id") in artifact_ids
             ]
         return evidence
+
+
+def _sarif_findings(finding_items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Adapt AIAF's flattened finding-item shape to what export_sarif expects.
+
+    finding_items carry whatever fields their producer set (deployment
+    drift, RAG scans, red-team results, ...) plus artifact_id/timestamp/
+    risk_score injected by _flatten_findings; they have no producer-agnostic
+    description or per-item id, so both are synthesized here.
+    """
+    adapted = []
+    for index, item in enumerate(finding_items):
+        detail = item.get("detail")
+        description = (
+            item.get("summary")
+            or (detail if isinstance(detail, str) else None)
+            or item.get("title")
+            or str(item.get("type") or "AIAF finding")
+        )
+        artifact_id = item.get("artifact_id")
+        adapted.append(
+            {
+                "type": item.get("type", "unknown"),
+                "severity": item.get("severity", "none"),
+                "description": description,
+                "id": item.get("finding_id") or f"{artifact_id or 'portfolio'}-{item.get('type', 'finding')}-{index}",
+                "artifact_id": artifact_id,
+                "score": item.get("risk_score"),
+                "model_id": artifact_id,
+                "framework_refs": item.get("framework_refs") or {},
+            }
+        )
+    return adapted
 
 
 def _controls_from_report(report: dict[str, Any]) -> list[dict[str, Any]]:

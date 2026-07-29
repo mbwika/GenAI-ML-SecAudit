@@ -15,6 +15,7 @@ dist/
 .coverage
 htmlcov/
 
+
 # Node / frontend
 # The dashboard's compiled output (src/aiaf/web/) is committed so the installed
 # package serves the UI without a Node toolchain; only build inputs are ignored.
@@ -37,3 +38,5 @@ memory/
 .vscode/
 
 outreach/article-drafts/
+aiaf-assistant.md
+RELEASING.md

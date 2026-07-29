@@ -259,6 +259,10 @@ def build_assurance_report(
     report["risk_score_context"] = _risk_score_context(report)
     report["recommended_actions"] = _recommended_actions(report)
     report["visualizations"] = _visualizations(report, metrics)
+    # Flattened, ungrouped finding list — distinct from evidence_inventory's
+    # counts above, this is the actual per-finding data other exporters
+    # (e.g. SARIF) need rather than a summary.
+    report["raw_finding_items"] = finding_items
     return report
 
 
