@@ -1,8 +1,8 @@
 """Prompt and product copy contracts for the AIAF assistant.
 
-The MVP assistant is deterministic, but we keep a small prompt-contract module
-so a future LLM-backed intent layer can reuse the same capability language and
-response expectations without reshaping the API.
+The community assistant is deterministic: it maps known request patterns onto
+predefined AIAF workflows and does not call an inference backend. Pro extends
+the same Ask AIAF experience with optional LLM-backed intent resolution.
 """
 
 ASSISTANT_VERSION = "0.1.0-mvp"

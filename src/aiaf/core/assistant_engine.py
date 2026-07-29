@@ -8,7 +8,6 @@ from typing import Any
 
 from .assistant_actor import normalize_actor
 from .assistant_authorization import evaluate_write_policy
-from .assistant_llm import AssistantLLMIntentResolver
 from .assistant_prompts import (
     ASSISTANT_MODE,
     ASSISTANT_VERSION,
@@ -38,12 +37,14 @@ class AssistantEngine:
 
     def __init__(self, datastore: object):
         self.datastore = datastore
-        self.intent_resolver = AssistantLLMIntentResolver()
 
     def capabilities(self) -> dict[str, Any]:
         return {
             "assistant_version": ASSISTANT_VERSION,
-            **self.intent_resolver.metadata(),
+            "mode": ASSISTANT_MODE,
+            "llm_intent_enabled": False,
+            "llm_model_name": None,
+            "llm_endpoint_configured": False,
             "supported_intents": list(SUPPORTED_INTENTS),
             "suggested_prompts": list(SUGGESTED_PROMPTS),
             "write_actions_enabled": ["create_report_snapshot"],
@@ -137,7 +138,10 @@ class AssistantEngine:
         payload = {
             "status": "completed",
             "assistant_version": ASSISTANT_VERSION,
-            **self.intent_resolver.metadata(),
+            "mode": ASSISTANT_MODE,
+            "llm_intent_enabled": False,
+            "llm_model_name": None,
+            "llm_endpoint_configured": False,
             "conversation_id": conversation_id,
             "intent": intent,
             "scope": scope,
@@ -200,19 +204,6 @@ class AssistantEngine:
     def _resolve_request(
         self, message: str, scope_hint: dict[str, Any]
     ) -> dict[str, Any]:
-        llm_resolution = self.intent_resolver.resolve(
-            message=message,
-            scope_hint=scope_hint,
-            supported_intents=list(SUPPORTED_INTENTS) + ["create_report_snapshot"],
-        )
-        if llm_resolution:
-            scope = self._merge_scope_hint(scope_hint, llm_resolution.get("scope") or {})
-            return {
-                "intent": llm_resolution.get("intent") or "help",
-                "scope": scope,
-                "clarification_question": llm_resolution.get("clarification_question"),
-                "source": llm_resolution.get("source", "llm"),
-            }
         return {
             "intent": self._resolve_intent(message),
             "scope": self._resolve_scope(message, scope_hint),
@@ -241,21 +232,6 @@ class AssistantEngine:
                 "_error": "I can only work with one scope at a time. Please choose one of artifact, model, or registrant.",
             }
         return scope
-
-    def _merge_scope_hint(
-        self, original_hint: dict[str, Any], llm_scope: dict[str, Any]
-    ) -> dict[str, str | None]:
-        merged = {
-            "artifact_id": self._normalize_scope_value(original_hint.get("artifact_id") or llm_scope.get("artifact_id")),
-            "model_id": self._normalize_scope_value(original_hint.get("model_id") or llm_scope.get("model_id")),
-            "registered_by": self._normalize_scope_value(original_hint.get("registered_by") or llm_scope.get("registered_by")),
-        }
-        selected = [name for name, value in merged.items() if value]
-        if len(selected) > 1:
-            return {
-                "_error": "I found more than one scope. Please choose one of artifact, model, or registrant.",
-            }
-        return merged
 
     def _clarification(
         self,

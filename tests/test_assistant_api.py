@@ -29,6 +29,8 @@ def test_assistant_capabilities_expose_mvp_contract(tmp_path, monkeypatch):
     assert "generate_governance_report" in result["supported_intents"]
     assert "create_report_snapshot" in result["supported_intents"]
     assert result["mode"] == "deterministic-orchestrated"
+    assert result["llm_intent_enabled"] is False
+    assert result["llm_endpoint_configured"] is False
     assert result["write_actions_enabled"] == ["create_report_snapshot"]
     assert result["write_authorization"]["confirmation_required"] == ["create_report_snapshot"]
     assert result["actor_attribution"]["request_actor_supported"] is True
@@ -195,50 +197,3 @@ def test_assistant_query_prefers_authenticated_actor_headers(tmp_path, monkeypat
 
     snapshots = store.list_assurance_report_snapshots(limit=1, artifact_id="artifact-77")
     assert snapshots[0]["created_by"] == "principal:u-123"
-
-
-def test_assistant_query_can_use_llm_intent_resolution(tmp_path, monkeypatch):
-    ensure_src()
-    from aiaf.api import assistant as assistant_api
-    from aiaf.core import assistant_engine
-
-    store = _make_store(tmp_path)
-    monkeypatch.setattr(assistant_api, "get_store", lambda: store)
-    monkeypatch.setattr(
-        assistant_engine.AssistantLLMIntentResolver,
-        "resolve",
-        lambda self, **kwargs: {
-            "intent": "create_report_snapshot",
-            "scope": {"artifact_id": "artifact-llm", "model_id": None, "registered_by": None},
-            "clarification_question": None,
-            "source": "llm",
-        },
-    )
-    monkeypatch.setattr(
-        assistant_engine.AssistantLLMIntentResolver,
-        "metadata",
-        lambda self: {
-            "mode": "deterministic-orchestrated+llm-intent",
-            "llm_intent_enabled": True,
-            "llm_model_name": "test-model",
-            "llm_endpoint_configured": True,
-        },
-    )
-
-    request = assistant_api.AssistantQueryRequest(
-        message="Please do the thing",
-        role="operator-1",
-        actor=assistant_api.AssistantActorHint(role="governance-analyst"),
-    )
-
-    pending = assistant_api.assistant_query(request, api_key="dev-key")
-
-    assert pending["status"] == "needs_confirmation"
-    request.confirm_action_id = pending["authorization"]["confirmation_id"]
-
-    result = assistant_api.assistant_query(request, api_key="dev-key")
-
-    assert result["status"] == "completed"
-    assert result["intent"] == "create_report_snapshot"
-    assert result["intent_resolution_source"] == "llm"
-    assert result["scope"]["artifact_id"] == "artifact-llm"

@@ -43,7 +43,25 @@ usable today.
 
 ## Free/Paid Boundary
 
-The community edition keeps the advisory policy engine and /v1/pep API so operators can evaluate policy decisions and inspect evidence. Inline request-blocking PEP gateway middleware is not distributed here; it lives in the Professional/Enterprise package aiaf_pro.enforcement because runtime enforcement is a paid control-plane capability.
+The community edition is the open assurance and evidence layer. It keeps the
+advisory policy engine and `/v1/pep` API so operators can evaluate policy
+decisions and inspect evidence. It also keeps governance controls, report
+snapshots, compliance mappings, SIEM/OSCAL exports, scheduled security
+execution, RAG inventory, and agent/tool authorization primitives.
+
+Commercial tiers attach above this core:
+
+| Surface | Community Sentry | Vanguard Pro / Enterprise |
+|---|---|---|
+| Advisory policy evaluation | Included through `/v1/pep` | Builds on it |
+| Inline request-blocking PEP gateway | Not distributed | `aiaf_pro.enforcement` |
+| Ask AIAF assistant | Deterministic, predefined workflow helper at `/v1/assistant` | AI-capable copilot at `/v1/pro/assistant` with optional inference-backed intent resolution |
+| Workspaces, SSO/RBAC, service accounts, audit custody, connectors, deliverables | Not distributed | Licensed Pro control plane |
+
+Runtime blocking carries paid control-plane value and lives in the
+Professional/Enterprise package. Community keeps a simple Ask AIAF experience
+for known assurance workflows; abstract natural-language inference and
+provider-backed intent resolution are Pro capabilities.
 
 ## Foundation Artifacts
 
@@ -274,6 +292,11 @@ The Community package includes:
 - standards mappings
 - SIEM / OSCAL / SARIF exports
 - SQLite by default, PostgreSQL when configured
+
+Sentry includes deterministic Ask AIAF helper flows for known requests. It does
+not include the AI-capable Pro copilot/inference layer or the inline
+request-blocking PEP gateway. Those are commercial control-plane surfaces in
+`aiaf-pro`.
 
 ### Run Red-Team Evaluation (garak / PyRIT)
 
